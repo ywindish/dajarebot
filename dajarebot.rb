@@ -1,8 +1,7 @@
 #!/usr/local/bin/ruby
 # -*- coding: UTF-8 -*-
 require 'rubygems'
-require 'rubytter'
-require 'oauth'
+require 'twitter'
 require 'kconv'
 require 'yaml'
 
@@ -26,16 +25,16 @@ class DajareBot
 
   def load_config
     f = open(here_path('config.yml'))
-    @config = YAML.load(f.read)
+    return YAML.load(f.read)
   end
 
   def get_twitter
-    token = OAuth::AccessToken.new(
-      OAuth::Consumer.new(@config['consumer_key'], @config['consumer_secret'], :site => @config['api']),
-      @config['access_token'],
-      @config['access_token_secret']
-    )
-    return OAuthRubytter.new(token)
+    return Twitter::REST::Client.new do |config|
+      config.consumer_key = @config['oauth']['consumer_key']
+      config.consumer_secret = @config['oauth']['consumer_secret']
+      config.access_token = @config['oauth']['access_token']
+      config.access_token_secret = @config['oauth']['access_token_secret']
+    end
   end
 
   def load
@@ -49,10 +48,11 @@ class DajareBot
   end
 
   def post(message)
-    puts Kconv.kconv(message, Kconv::UTF8)
+    tweet = Kconv.kconv(message + ' ' + @config['hashtag'], Kconv::UTF8)
+    puts tweet
     begin
       if @config['twitter_post']
-        @twitter.update Kconv.kconv(message + @config['hash_tag'], Kconv::UTF8)
+        @twitter.update tweet
       end
     rescue => e
       p e
